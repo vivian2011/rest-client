@@ -644,6 +644,9 @@ module RestClient
       if uri.hostname.nil?
         raise URI::InvalidURIError.new("bad URI(no host provided): #{url}")
       end
+      unless @headers["Host"].nil?
+        uri.hostname = @headers["Host"].to_s
+      end
 
       @user = CGI.unescape(uri.user) if uri.user
       @password = CGI.unescape(uri.password) if uri.password
