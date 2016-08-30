@@ -197,6 +197,7 @@ module RestClient
 
       @tf = nil # If you are a raw request, this is your tempfile
       @max_redirects = args[:max_redirects] || 10
+
       @processed_headers = make_headers headers
       @args = args
 
@@ -307,10 +308,13 @@ module RestClient
     #
     def make_cookie_header
       return nil if cookie_jar.nil?
+      uri_header = URI(url)
+      unless @headers["Host"].nil?
+        uri_header.hostname = @headers["Host"]
+      end
 
-      arr = cookie_jar.cookies(url)
+      arr = cookie_jar.cookies(uri_header.to_s)
       return nil if arr.empty?
-
       return HTTP::Cookie.cookie_value(arr)
     end
 
@@ -401,7 +405,6 @@ module RestClient
         if key.is_a?(Symbol)
           key = key.to_s
         end
-
         # assume implicit domain from the request URI, and set for_domain to
         # permit subdomains
         jar.add(HTTP::Cookie.new(key, val, domain: uri.hostname.downcase,
