@@ -43,7 +43,7 @@ module RestClient
     attr_reader :method, :uri, :url, :headers, :payload, :proxy,
                 :user, :password, :read_timeout, :max_redirects,
                 :open_timeout, :raw_response, :processed_headers, :args,
-                :ssl_opts
+                :ssl_opts, :uri_cookie
 
     # An array of previous redirection responses
     attr_accessor :redirection_history
@@ -287,7 +287,7 @@ module RestClient
     def cookies
       hash = {}
 
-      @cookie_jar.cookies(uri).each do |c|
+      @cookie_jar.cookies(@uri_cookie).each do |c|
         hash[c.name] = c.value
       end
 
@@ -308,12 +308,8 @@ module RestClient
     #
     def make_cookie_header
       return nil if cookie_jar.nil?
-      uri_header = URI(url)
-      unless @headers["Host"].nil?
-        uri_header.hostname = @headers["Host"]
-      end
 
-      arr = cookie_jar.cookies(uri_header.to_s)
+      arr = cookie_jar.cookies(@uri_cookie.to_s)
       return nil if arr.empty?
       return HTTP::Cookie.cookie_value(arr)
     end
@@ -407,7 +403,7 @@ module RestClient
         end
         # assume implicit domain from the request URI, and set for_domain to
         # permit subdomains
-        jar.add(HTTP::Cookie.new(key, val, domain: uri.hostname.downcase,
+        jar.add(HTTP::Cookie.new(key, val, domain: @uri_cookie.hostname.downcase,
                                  path: '/', for_domain: true))
       end
 
@@ -647,17 +643,20 @@ module RestClient
       if uri.hostname.nil?
         raise URI::InvalidURIError.new("bad URI(no host provided): #{url}")
       end
-      unless @headers["Host"].nil?
-        uri.hostname = @headers["Host"].to_s
-      end
 
       @user = CGI.unescape(uri.user) if uri.user
       @password = CGI.unescape(uri.password) if uri.password
       if !@user && !@password
         @user, @password = Netrc.read[uri.hostname]
       end
-
+      
+      uri_cookie = uri.dup
+      unless @headers["Host"].nil?
+        uri_cookie.hostname = @headers["Host"].to_s
+      end
+      @uri_cookie = uri_cookie
       @uri = uri
+
     end
 
     def print_verify_callback_warnings

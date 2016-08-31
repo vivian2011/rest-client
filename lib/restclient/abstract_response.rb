@@ -51,11 +51,10 @@ module RestClient
     #
     def cookies
       hash = {}
-
-      cookie_jar.cookies(@request.uri).each do |cookie|
+      
+      cookie_jar.cookies(@request.uri_cookie).each do |cookie|
         hash[cookie.name] = cookie.value
       end
-
       hash
     end
 
@@ -68,7 +67,7 @@ module RestClient
 
       jar = @request.cookie_jar.dup
       headers.fetch(:set_cookie, []).each do |cookie|
-        jar.parse(cookie, @request.uri)
+        jar.parse(cookie, @request.uri_cookie)
       end
 
       @cookie_jar = jar
